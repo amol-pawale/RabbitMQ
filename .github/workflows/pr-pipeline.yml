@@ -1,0 +1,148 @@
+from playwright.sync_api import sync_playwright
+import time
+import random
+
+def human_delay(min_seconds=5, max_seconds=15):
+    """Wait for a random amount of time to simulate a human reading or hesitating."""
+    time.sleep(random.uniform(min_seconds, max_seconds))
+
+def simulate_human_scroll(page):
+    """Randomly scroll down and up to simulate a human reading the profile."""
+    scrolls = random.randint(1, 3)
+    for _ in range(scrolls):
+        # Scroll down randomly
+        page.mouse.wheel(0, random.randint(300, 800))
+        human_delay(1, 3)
+    
+    # Scroll back up a bit
+    page.mouse.wheel(0, -random.randint(100, 400))
+    human_delay(1, 2)
+
+def send_connection_requests(search_url, max_requests=10):
+    """
+    Navigates to a people search page and sends connection requests safely.
+    max_requests: Maximum number of requests to send in this session (keep this low!)
+    """
+    with sync_playwright() as p:
+        user_data_dir = "./chrome_session"
+        print("Starting stealth connection bot...")
+        
+        # Launching with stealthier settings
+        browser = p.chromium.launch_persistent_context(
+            user_data_dir,
+            channel="chrome",
+            headless=False,
+            # Pass some arguments to make the browser look slightly more standard
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--start-maximized"
+            ],
+            viewport={"width": 1280, "height": 800} # Common screen resolution
+        )
+        
+        page = browser.pages[0] if browser.pages else browser.new_page()
+        
+        print("Navigating to LinkedIn search...")
+        page.goto(search_url)
+        
+        # Automatically wait to see if the search bar (or another logged-in element) appears.
+        # This acts as our "Are we logged in?" check.
+        try:
+            print("Checking login status and waiting for search page to load...")
+            # Wait up to 20 seconds for the global search bar to become visible
+            page.wait_for_selector("input.search-global-typeahead__input", timeout=20000)
+            print("Successfully loaded search page!")
+            human_delay(2, 5)
+        except Exception:
+            print("\n[!] WARNING: Could not detect the search bar. You might not be logged in, or LinkedIn has a CAPTCHA.")
+            input(">>> Please check the browser window, log in if necessary, and press ENTER when the search page is fully loaded. <<<\n")
+        
+        requests_sent = 0
+        
+        # We will loop through pages if necessary
+        while requests_sent < max_requests:
+            # Wait for search results to load
+            try:
+                page.wait_for_selector(".reusable-search__result-container", timeout=15000)
+                human_delay(3, 7)
+            except Exception:
+                print("Could not find search results. Moving on or stopping...")
+                break
+                
+            # Find all the 'Connect' buttons on the current page
+            # Note: We specifically look for buttons that say "Connect" to avoid "Follow" or "Message"
+            connect_buttons = page.locator("button[aria-label^='Invite']").all()
+            
+            if not connect_buttons:
+                print("No 'Connect' buttons found on this page.")
+            
+            for button in connect_buttons:
+                if requests_sent >= max_requests:
+                    break
+                    
+                try:
+                    # Scroll the button into view
+                    button.scroll_into_view_if_needed()
+                    simulate_human_scroll(page)
+                    
+                    print(f"[{requests_sent + 1}/{max_requests}] Attempting to click connect...")
+                    # Click the connect button
+                    button.click()
+                    human_delay(2, 4)
+                    
+                    # Sometimes LinkedIn asks to add a note or just confirm
+                    # Check if the "Send without a note" or "Send" button appeared
+                    send_button = page.locator("button[aria-label='Send without a note'], button.artdeco-button--primary:has-text('Send')")
+                    if send_button.is_visible():
+                        send_button.click()
+                        print("Request sent successfully!")
+                        requests_sent += 1
+                        
+                        # CRITICAL: Wait a long, random time before the next request (e.g. 12 to 15 minutes)
+                        # This is the most important part of not getting caught.
+                        long_wait = random.randint(720, 900) 
+                        print(f"Sleeping for {long_wait} seconds to mimic human behavior...")
+                        time.sleep(long_wait)
+                    else:
+                        print("Could not find the final 'Send' button. Skipping this profile.")
+                        # Close the modal if it's stuck
+                        close_btn = page.locator("button[aria-label='Dismiss']")
+                        if close_btn.is_visible():
+                            close_btn.click()
+                            
+                except Exception as e:
+                    print(f"Failed to process a button: {e}")
+                    continue
+            
+            if requests_sent < max_requests:
+                # Try to go to the next page
+                next_button = page.locator("button.artdeco-pagination__button--next")
+                if next_button.is_visible() and not next_button.is_disabled():
+                    print("Moving to the next page of results...")
+                    simulate_human_scroll(page)
+                    next_button.click()
+                    
+                    # Extra long wait between pages
+                    human_delay(5, 12) 
+                else:
+                    print("No more pages available.")
+                    break
+
+        print(f"Finished session. Sent {requests_sent} requests.")
+        browser.close()
+
+if __name__ == "__main__":
+    import urllib.parse
+    
+    # Prompt the user for what they want to search for right when the script starts
+    print("\n--- LinkedIn Stealth Connector ---")
+    search_term = input("Enter the job title or keyword you want to search for (e.g., 'Software Engineer'): ")
+    
+    # URL encode the search term so it works in the link
+    encoded_term = urllib.parse.quote(search_term)
+    
+    # Construct the search URL ensuring the 'People' filter is applied automatically
+    target_url = f"https://www.linkedin.com/search/results/people/?keywords={encoded_term}"
+    
+    # DO NOT EXCEED 15-20 in a single day to protect your account.
+    send_connection_requests(target_url, max_requests=10)
