@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "MdWI89GFcJA=",
+  "success": true,
+  "projectFilePath": "/Users/amolpawale/Source/RabbitMQ/RabbitMQ Basic/RabbitMQ/src/RabbitMQAPI/RabbitMQAPI.csproj",
+  "expectedPackageFiles": [
+    "/Users/amolpawale/.nuget/packages/microsoft.aspnetcore.openapi/10.0.0/microsoft.aspnetcore.openapi.10.0.0.nupkg.sha512",
+    "/Users/amolpawale/.nuget/packages/microsoft.openapi/2.0.0/microsoft.openapi.2.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
