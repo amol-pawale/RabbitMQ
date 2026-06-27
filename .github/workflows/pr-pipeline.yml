@@ -106,6 +106,6 @@ jobs:
                - Unprotected API endpoints or missing input validation.
 
             4. TONE OF FEEDBACK:
-               - Keep your comments professional, highly constructive, and concise.
-               - State exactly what the issue is, why it matters, and provide a short code example of the recommended fix where applicable.
-               - IF THE CODE IS WELL-WRITTEN AND LOOKS GOOD: Do not leave empty or negative reviews. Instead, explicitly post a single supportive comment stating exactly: "LGTM! The code follows best practices and no issues were found."
+               - ONLY leave a review comment if you find a genuine issue worth raising. Do not nitpick style or formatting.
+               - For each real issue: state exactly what the problem is, why it matters, and provide a short code example of the recommended fix.
+               - IF NO ISSUES ARE FOUND: post exactly one comment saying "LGTM! The code follows best practices and no issues were found." — nothing more.
