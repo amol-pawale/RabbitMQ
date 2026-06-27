@@ -16,15 +16,17 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-          
+
+      - name: Restore Dependencies
+        run: dotnet restore RabbitMQ.sln
+
       - name: Verify .NET Format
-        working-directory: ./Backend
-        run: dotnet format --verify-no-changes
+        run: dotnet format RabbitMQ.sln --verify-no-changes
 
   build:
     name: 2. Build
@@ -38,10 +40,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-          
-      - name: Build .NET
-        working-directory: ./Backend
-        run: dotnet build --configuration Release
+
+      - name: Restore Dependencies
+        run: dotnet restore RabbitMQ.sln
+
+      - name: Build Solution
+        run: dotnet build RabbitMQ.sln --configuration Release --no-restore
 
   test:
     name: 3. Automated Tests
@@ -55,10 +59,14 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-          
-      - name: Test .NET
-        working-directory: ./Backend
-        run: dotnet test --configuration Release
+
+      - name: Restore Dependencies
+        run: dotnet restore RabbitMQ.sln
+
+      - name: Run Tests
+        # No test projects exist yet — this step is a no-op until tests are added.
+        # dotnet test will succeed with 0 tests found.
+        run: dotnet test RabbitMQ.sln --configuration Release --no-restore --verbosity normal
 
   ai-review:
     name: 4. AI Code Review
@@ -68,7 +76,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
 
       - name: Execute Gemini AI Review
         uses: sshnaidm/gemini-code-review-action@v2
@@ -76,21 +84,28 @@ jobs:
           gemini-key: ${{ secrets.GEMINIAI }}
           model: gemini-2.5-flash
           prompt: |
-            Act as a Senior Backend Engineer and Architect specializing in .NET Core (C#). 
-            Review the provided code diff thoroughly. Do not comment on trivial style or formatting issues (like indentation or missing semicolons). 
+            Act as a Senior Backend Engineer specializing in .NET Core (C#) and message-driven architectures using RabbitMQ.
+            Review the provided code diff thoroughly. Do not comment on trivial style or formatting issues (like indentation or missing semicolons).
             Instead, focus heavily on the following critical areas:
 
-            1. BACKEND (.NET):
+            1. RABBITMQ & MESSAGING:
+               - Correct usage of IConnection, IChannel (or IModel) lifecycles — ensure they are not shared across threads or disposed prematurely.
+               - Proper consumer acknowledgement patterns (BasicAck, BasicNack, BasicReject) and dead-letter queue considerations.
+               - Durable queues, persistent message delivery modes, and exchange/binding correctness.
+               - Graceful shutdown of hosted services (IHostedService / BackgroundService) and connection cleanup.
+
+            2. BACKEND (.NET):
                - Proper async/await usage (avoiding .Result, .Wait(), or missing await keywords).
-               - Efficient Entity Framework (EF) Core queries (look for N+1 query problems, missing AsNoTracking for read-only queries, or missing indexes).
-               - Clean dependency injection patterns and proper object lifetimes (Transient vs Scoped vs Singleton).
-               - Robust exception handling and structured logging patterns.
+               - Clean dependency injection patterns and correct object lifetimes (Transient vs Scoped vs Singleton) — especially important for RabbitMQ connections.
+               - Robust exception handling, retry logic, and structured logging patterns.
+               - Configuration binding from appsettings.json (e.g., RabbitMQ hostnames, credentials) using the Options pattern.
 
-            2. SECURITY & PERFORMANCE:
-               - SQL injection risks, cross-site scripting (XSS), or unprotected API endpoints.
-               - Memory leaks, unmanaged resource disposal (using/IDisposable), or unoptimized loops.
+            3. SECURITY & PERFORMANCE:
+               - Hardcoded credentials or secrets in code/config files.
+               - Memory leaks, unmanaged resource disposal (using/IDisposable), or unoptimized message processing loops.
+               - Unprotected API endpoints or missing input validation.
 
-            3. TONE OF FEEDBACK:
-               - Keep your comments professional, highly constructive, and concise.
-               - State exactly what the issue is, why it matters, and provide a short code example of the recommended fix where applicable.
-               - IF THE CODE IS WELL-WRITTEN AND LOOKS GOOD: Do not leave empty or negative reviews. Instead, explicitly post a single supportive comment stating exactly: "LGTM! The code follows best practices and no issues were found."
+            4. TONE OF FEEDBACK:
+               - ONLY leave a review comment if you find a genuine issue worth raising. Do not nitpick style or formatting.
+               - For each real issue: state exactly what the problem is, why it matters, and provide a short code example of the recommended fix.
+               - IF NO ISSUES ARE FOUND: post exactly one comment saying "LGTM! The code follows best practices and no issues were found." — nothing more.
