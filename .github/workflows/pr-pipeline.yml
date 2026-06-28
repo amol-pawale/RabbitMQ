@@ -80,13 +80,23 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Execute Claude Code Review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
           prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Note: The PR branch is already checked out in the current working directory.
+            Use `gh pr comment` for top-level feedback.
+            Use `mcp__github_inline_comment__create_inline_comment` (with `confirmed: true`) to highlight specific code issues.
+            Only post GitHub comments — don't submit review text as plain messages.
+
             Act as a Senior Backend Engineer specializing in .NET Core (C#) and message-driven architectures using RabbitMQ.
             Review the provided code diff thoroughly. Do not comment on trivial style or formatting issues (like indentation or missing semicolons).
             Instead, focus heavily on the following critical areas:
