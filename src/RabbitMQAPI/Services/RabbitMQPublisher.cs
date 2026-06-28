@@ -48,6 +48,6 @@ public class RabbitMQPublisher : IAsyncDisposable
             await _channel.DisposeAsync();
 
         if (_connection is not null)
-            _connection.Dispose();
+                await _connection.DisposeAsync();
     }
 }

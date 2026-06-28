@@ -23,8 +23,8 @@ public class RabbitWorker : BackgroundService, IAsyncDisposable
     }
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var hostName = _configuration["RabbitMQ:Hostname"] ?? "localhost";
-        var queueName = _configuration["RabbitMQ:QueueName"] ?? "hello";
+        var hostName = _configuration["RabbitMQ:Host"] ?? "localhost";
+        var queueName = _configuration["RabbitMQ:QueueName"] ?? "orders";
 
 
         while (!stoppingToken.IsCancellationRequested)
@@ -53,7 +53,13 @@ public class RabbitWorker : BackgroundService, IAsyncDisposable
 
     private async Task ConnectAndConsumeAsync(string hostname, string queueName, CancellationToken stoppingToken)
     {
-        var factory = new ConnectionFactory { HostName = hostname };
+        var factory = new ConnectionFactory
+        {
+            HostName = hostname,
+            Port = _configuration.GetValue<int>("RabbitMQ:Port", 5672),
+            UserName = _configuration["RabbitMQ:Username"] ?? "guest",
+            Password = _configuration["RabbitMQ:Password"] ?? "guest"
+        };
         _connection = await factory.CreateConnectionAsync(stoppingToken);
         _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
@@ -125,6 +131,7 @@ public class RabbitWorker : BackgroundService, IAsyncDisposable
         if (_channel is not null)
             await _channel.DisposeAsync();
 
-        _connection.Dispose();
+        if (_connection is not null)
+            await _connection.DisposeAsync();
     }
 }
