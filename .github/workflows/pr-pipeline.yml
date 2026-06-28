@@ -75,6 +75,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      id-token: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -85,7 +86,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          direct_prompt: |
+          prompt: |
             Act as a Senior Backend Engineer specializing in .NET Core (C#) and message-driven architectures using RabbitMQ.
             Review the provided code diff thoroughly. Do not comment on trivial style or formatting issues (like indentation or missing semicolons).
             Instead, focus heavily on the following critical areas:
