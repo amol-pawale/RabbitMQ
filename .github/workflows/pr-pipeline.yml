@@ -72,18 +72,20 @@ jobs:
     name: 4. AI Code Review
     runs-on: ubuntu-latest
     needs: test
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Execute Gemini AI Review
-        uses: sshnaidm/gemini-code-review-action@v2
+      - name: Execute Claude Code Review
+        uses: anthropics/claude-code-action@v1
         with:
-          gemini-key: ${{ secrets.GEMINIAI }}
-          model: gemini-2.5-flash
-          prompt: |
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          direct_prompt: |
             Act as a Senior Backend Engineer specializing in .NET Core (C#) and message-driven architectures using RabbitMQ.
             Review the provided code diff thoroughly. Do not comment on trivial style or formatting issues (like indentation or missing semicolons).
             Instead, focus heavily on the following critical areas:
