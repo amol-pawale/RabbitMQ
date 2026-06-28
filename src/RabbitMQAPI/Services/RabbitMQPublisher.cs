@@ -13,16 +13,16 @@ public class RabbitMQPublisher : IAsyncDisposable
     public RabbitMQPublisher(IConfiguration configuration)
     {
         _hostname = configuration["RabbitMQ:Hostname"] ?? "localhost";
-        _queueName = configuration["RabbitMQ:QueueName"] ?? "orders";    
+        _queueName = configuration["RabbitMQ:QueueName"] ?? "orders";
     }
 
     public async Task InitializeAsync(CancellationToken stoppingToken = default)
     {
-        var factory = new ConnectionFactory {HostName = _hostname};
+        var factory = new ConnectionFactory { HostName = _hostname };
         _connection = await factory.CreateConnectionAsync(stoppingToken);
         _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
-        await _channel.QueueDeclareAsync(queue : _queueName,
+        await _channel.QueueDeclareAsync(queue: _queueName,
                                             durable: false,
                                             exclusive: false,
                                             autoDelete: false,
@@ -44,9 +44,9 @@ public class RabbitMQPublisher : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         // TODO: close channel and connection
-        if(_channel is not null )
+        if (_channel is not null)
             await _channel.DisposeAsync();
-        
+
         if (_connection is not null)
             _connection.Dispose();
     }
